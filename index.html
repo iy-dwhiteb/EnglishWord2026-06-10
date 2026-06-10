@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英単語帳</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f7fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        /* 単語カードのスタイル */
+        .card {
+            background-color: transparent;
+            height: 100px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        /* タップして裏返すクラス */
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        /* 表（英語）のスタイル */
+        .card-front {
+            background-color: #ffffff;
+            color: #1a73e8;
+            font-size: 22px;
+            font-weight: bold;
+            border: 2px solid #e0e0e0;
+        }
+        /* 裏（日本語）のスタイル */
+        .card-back {
+            background-color: #1a73e8;
+            color: white;
+            font-size: 18px;
+            transform: rotateY(180deg);
+        }
+        .number {
+            position: absolute;
+            top: 5px;
+            left: 10px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .card-back .number {
+            color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>英単語帳 (全54語)</h1>
+    <p style="color: #666; margin-top: 0; font-size: 14px;">カードをタップすると裏返ります</p>
+
+    <div class="container" id="word-list">
+        </div>
+
+    <script>
+        // 写真から抽出した見出し語データ (全54語)
+        const wordData = [
+            // 1枚目・2枚目の写真 (244〜273)
+            { no: "244", en: "popularity", ja: "人気；流行" },
+            { no: "245", en: "population", ja: "人口；個体数；住民" },
+            { no: "246", en: "organic", ja: "有機（栽培）の；器官の" },
+            { no: "247", en: "organize", ja: "を組織する；（行事など）を準備する" },
+            { no: "248", en: "arrange", ja: "の手はずを整える；を手配する；を配列する" },
+            { no: "249", en: "vegetable", ja: "野菜" },
+            { no: "250", en: "increase", ja: "増加する、を増やす、増加" },
+            { no: "251", en: "probably", ja: "おそらく" },
+            { no: "252", en: "pesticide", ja: "殺虫剤；農薬" },
+            { no: "253", en: "fertilizer", ja: "（化学）肥料" },
+            { no: "254", en: "fertile", ja: "肥沃な；繁殖力の強い" },
+            { no: "255", en: "method", ja: "方法；体系" },
+            { no: "256", en: "protect", ja: "を保護する" },
+            { no: "257", en: "preserve", ja: "を保護する；を保つ；を保存する" },
+            { no: "258", en: "agricultural", ja: "農業の" },
+            { no: "259", en: "generally", ja: "一般的に；大体" },
+            { no: "260", en: "safe", ja: "安全な；無事な、金庫" },
+            { no: "261", en: "percent", ja: "パーセント" },
+            { no: "262", en: "government", ja: "政府" },
+            { no: "263", en: "minister", ja: "大臣；牧師" },
+            { no: "264", en: "ministry", ja: "（日本の内閣の）省" },
+            { no: "265", en: "officially", ja: "公式に；正式に" },
+            { no: "266", en: "official", ja: "当局者；役員、公式の" },
+            { no: "267", en: "license", ja: "免許（証）、を認可する" },
+            { no: "268", en: "patent", ja: "特許、の特許を取る" },
+            { no: "269", en: "farm", ja: "農場" },
+            { no: "270", en: "estate", ja: "（全）財産；地所、所有地" },
+            { no: "271", en: "property", ja: "特性；不動産；財産；所有物" },
+            { no: "272", en: "barn", ja: "納屋；物置" },
+            { no: "273", en: "livestock", ja: "家畜" },
+
+            // 3枚目・4枚目の写真 (274〜297)
+            { no: "274", en: "addition", ja: "追加（分）；足し算" },
+            { no: "275", en: "lot", ja: "たくさん；土地；運命" },
+            { no: "276", en: "competitive", ja: "競争の；競争力がある；競争心の強い" },
+            { no: "277", en: "compete", ja: "競争する" },
+            { no: "278", en: "rival", ja: "競争相手、に匹敵する" },
+            { no: "279", en: "compare", ja: "を比較する；をたとえる、匹敵する" },
+            { no: "280", en: "comparable", ja: "相当する；匹敵する" },
+            { no: "281", en: "quantity", ja: "量；多量" },
+            { no: "282", en: "average", ja: "平均、平均的な" },
+            { no: "283", en: "environmental", ja: "（自然）環境の" },
+            { no: "284", en: "conservation", ja: "（資源）保護" },
+            { no: "285", en: "cost", ja: "（費用）がかかる；（犠牲）を払わせる、犠牲；費用" },
+            { no: "286", en: "budget", ja: "予算；経費" },
+            { no: "287", en: "consider", ja: "をAをBとみなす；をよく考える" },
+            { no: "288", en: "suppose", ja: "することになっている；と思う；仮定する" },
+            { no: "289", en: "pollution", ja: "汚染；公害" },
+            { no: "290", en: "agree", ja: "であることに同意する；同意する；賛成する；合う" },
+            { no: "291", en: "consent", ja: "同意（する）" },
+            { no: "292", en: "price", ja: "値段；物価；代償" },
+            { no: "293", en: "pay", ja: "を支払う；を払う；に報いる、代金を支払う、給料" },
+            { no: "294", en: "refund", ja: "返金、払い戻し、を返金する" },
+            { no: "295", en: "owe", ja: "のおかげである；（お金）を借りている" },
+            { no: "296", en: "loan", ja: "貸し付け金、ローン、を貸し付ける" },
+            { no: "297", en: "debt", ja: "借金" }
+        ];
+
+        const listContainer = document.getElementById('word-list');
+
+        // カードを画面に生成するループ処理
+        wordData.forEach(word => {
+            const cardElement = document.createElement('div');
+            cardElement.className = 'card';
+            
+            // タップ（クリック）したときにflippedクラスを切り替える
+            cardElement.onclick = function() {
+                this.classList.toggle('flipped');
+            };
+
+            cardElement.innerHTML = `
+                <div class="card-inner">
+                    <div class="card-front">
+                        <span class="number">${word.no}</span>
+                        <div>${word.en}</div>
+                    </div>
+                    <div class="card-back">
+                        <span class="number">${word.no}</span>
+                        <div>${word.ja}</div>
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(cardElement);
+        });
+    </script>
+</body>
+</html>
